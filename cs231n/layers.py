@@ -116,7 +116,7 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    dx = dout * (x > 0)
+    dx = dout * (x > 0) 
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -201,7 +201,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         out = bef_shift*gamma + beta
         running_mean = momentum * running_mean + (1-momentum) * sample_mean
         running_var = momentum * running_var + (1-momentum) * sample_var
-        cache = (gamma, sample_var, bef_shift)
+        cache = (x, gamma, sample_mean, sample_var, bef_shift)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -258,8 +258,9 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    gamma, sample_var, bef_shift = cache
-    dx = dout * (gamma / np.sqrt(sample_var))
+    x, gamma, sample_mean, sample_var, bef_shift = cache
+    n = x.shape[0]
+    dx = dout * gamma * ((((n-1)/n)*x)-(x-sample_mean)*2*sample_mean/np.sqrt(sample_var))/sample_var
     dgamma = np.sum(bef_shift * dout, axis=0)
     dbeta = np.sum(dout, axis=0)
 
