@@ -197,11 +197,11 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         sample_mean = np.mean(x, axis= 0)
         sample_var = np.var(x, axis= 0)
-        bef_shift = (x - sample_mean)/np.sqrt(sample_var)
+        bef_shift = (x - sample_mean)/np.sqrt(sample_var+eps)
         out = bef_shift*gamma + beta
         running_mean = momentum * running_mean + (1-momentum) * sample_mean
         running_var = momentum * running_var + (1-momentum) * sample_var
-        cache = (x, gamma, sample_mean, sample_var, bef_shift)
+        cache = (x, gamma, sample_mean, sample_var, bef_shift, eps)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -216,7 +216,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        out = ((x-running_mean)/np.sqrt(running_var)) * gamma + beta
+        out = ((x-running_mean)/np.sqrt(running_var+eps)) * gamma + beta
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -258,9 +258,12 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    x, gamma, sample_mean, sample_var, bef_shift = cache
+    x, gamma, sample_mean, sample_var, bef_shift, eps = cache
     n = x.shape[0]
-    dx = dout * gamma * ((((n-1)/n)*x)-(x-sample_mean)*2*sample_mean/np.sqrt(sample_var))/sample_var
+    dhat = dout*gamma
+    dvar = np.sum(dhat*(x-sample_mean)*(sample_var+eps)**(-1.5)/(-2),axis=0)
+    dmean = np.sum(-dhat/np.sqrt(sample_var+eps), axis=0) + dvar*np.mean(-2*(x-sample_mean),axis=0)
+    dx = dhat/np.sqrt(sample_var+eps) + dvar*2*(x-sample_mean)/n + dmean/n
     dgamma = np.sum(bef_shift * dout, axis=0)
     dbeta = np.sum(dout, axis=0)
 
@@ -297,7 +300,13 @@ def batchnorm_backward_alt(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, gamma, sample_mean, sample_var, bef_shift, eps = cache
+    dgamma = np.sum(bef_shift * dout, axis=0)
+    dbeta = np.sum(dout, axis=0)
+    dhat = dout*gamma
+    dvar = np.mean(dhat*(x-sample_mean)*(sample_var+eps)**(-1.5)/(-2),axis=0)
+    dmean = np.mean(-dhat/np.sqrt(sample_var+eps), axis=0)
+    dx = dhat/np.sqrt(sample_var+eps) + dvar*2*(x-sample_mean) + dmean
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

@@ -212,8 +212,8 @@ class FullyConnectedNet(object):
             self.params['W%d'%(k+1)] = np.random.normal(0, weight_scale, (hidden_dims[k],hidden_dims[k+1]))
             self.params['b%d'%(k+1)] = np.zeros(hidden_dims[k+1])
             if k+1 < self.num_layers and self.normalization != None :
-                self.params['gamma%d'%(k+1)] = np.ones(hidden_dims[k])
-                self.params['beta%d'%(k+1)] = np.zeros(hidden_dims[k])
+                self.params['gamma%d'%(k+1)] = np.ones(hidden_dims[k+1])
+                self.params['beta%d'%(k+1)] = np.zeros(hidden_dims[k+1])
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -337,7 +337,7 @@ class FullyConnectedNet(object):
                 dout = dropout_backward(dout, caches.pop())
             dout = relu_backward(dout, caches.pop())
             if self.normalization == 'batchnorm' :
-                dout, dgamma, dbeta = batchnorm_backward(dout, caches.pop())
+                dout, dgamma, dbeta = batchnorm_backward_alt(dout, caches.pop())
                 grads['gamma%d'%k] = dgamma
                 grads['beta%d'%k] = dbeta
             elif self.normalization == 'layernorm' :
