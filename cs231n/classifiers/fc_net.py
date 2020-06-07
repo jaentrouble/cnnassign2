@@ -294,6 +294,7 @@ class FullyConnectedNet(object):
             caches.append(cache_relu)
             if self.use_dropout :
                 out, cache_drop = dropout_forward(out, self.dropout_param)
+                caches.append(cache_drop)
         scores, cache_final_aff = affine_forward(out, self.params['W%d'%(self.num_layers)], 
                                               self.params['b%d'%(self.num_layers)])
         caches.append(cache_final_aff)
