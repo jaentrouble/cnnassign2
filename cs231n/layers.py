@@ -354,7 +354,14 @@ def layernorm_forward(x, gamma, beta, ln_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x = x.T
+    sample_mean = np.mean(x, axis= 0)
+    sample_var = np.var(x, axis= 0)
+    mean_shifted = x-sample_mean
+    sigma = np.sqrt(sample_var + eps)
+    bef_shift = mean_shifted/sigma
+    out = bef_shift.T*gamma + beta
+    cache = (gamma, sigma, mean_shifted, bef_shift)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -389,7 +396,16 @@ def layernorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    gamma, sigma, mean_shifted, bef_shift = cache
+    dgamma = np.sum(bef_shift.T * dout, axis=0)
+    dbeta = np.sum(dout, axis=0)
+    dout = dout.T
+    gamma = gamma.reshape(-1,1)
+    # dhat = dout*gamma.T
+    # dvar = np.mean(-gamma*dout*(mean_shifted),axis=0)*(sigma)**(-3)
+    # dmean = gamma*np.mean(-dout/sigma, axis=0)
+    dx = (gamma*dout + np.mean(-gamma*dout*(mean_shifted),axis=0)*(sigma)**(-2)*(mean_shifted) + np.mean(-dout*gamma, axis=0))/sigma
+    dx = dx.T
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
