@@ -191,6 +191,7 @@ class FullyConnectedNet(object):
         self.num_layers = 1 + len(hidden_dims)
         self.dtype = dtype
         self.params = {}
+        hidden_dims = hidden_dims.copy()
 
         ############################################################################
         # TODO: Initialize the parameters of the network, storing all values in    #
@@ -347,11 +348,10 @@ class FullyConnectedNet(object):
             dout, dW, db = affine_backward(dout, caches.pop())
             grads['W%d'%k] = dW + self.reg * self.params['W%d'%k]
             grads['b%d'%k] = db
-            
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
-
         return loss, grads

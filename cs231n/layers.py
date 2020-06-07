@@ -197,11 +197,13 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         sample_mean = np.mean(x, axis= 0)
         sample_var = np.var(x, axis= 0)
-        bef_shift = (x - sample_mean)/np.sqrt(sample_var+eps)
+        mean_shifted = x-sample_mean
+        sigma = np.sqrt(sample_var + eps)
+        bef_shift = mean_shifted/sigma
         out = bef_shift*gamma + beta
         running_mean = momentum * running_mean + (1-momentum) * sample_mean
         running_var = momentum * running_var + (1-momentum) * sample_var
-        cache = (x, gamma, sample_mean, sample_var, bef_shift, eps)
+        cache = (gamma, sigma, mean_shifted, bef_shift)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -258,12 +260,12 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    x, gamma, sample_mean, sample_var, bef_shift, eps = cache
-    n = x.shape[0]
+    gamma, sigma, mean_shifted, bef_shift = cache
+    n = bef_shift.shape[0]
     dhat = dout*gamma
-    dvar = np.sum(dhat*(x-sample_mean)*(sample_var+eps)**(-1.5)/(-2),axis=0)
-    dmean = np.sum(-dhat/np.sqrt(sample_var+eps), axis=0) + dvar*np.mean(-2*(x-sample_mean),axis=0)
-    dx = dhat/np.sqrt(sample_var+eps) + dvar*2*(x-sample_mean)/n + dmean/n
+    dvar = np.sum(dhat*(mean_shifted)*(sigma)**(-3)/(-2),axis=0)
+    dmean = np.sum(-dhat/sigma, axis=0) + dvar*np.mean(-2*(mean_shifted),axis=0)
+    dx = dhat/sigma + dvar*2*(mean_shifted)/n + dmean/n
     dgamma = np.sum(bef_shift * dout, axis=0)
     dbeta = np.sum(dout, axis=0)
 
@@ -300,13 +302,13 @@ def batchnorm_backward_alt(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    x, gamma, sample_mean, sample_var, bef_shift, eps = cache
+    gamma, sigma, mean_shifted, bef_shift = cache
     dgamma = np.sum(bef_shift * dout, axis=0)
     dbeta = np.sum(dout, axis=0)
-    dhat = dout*gamma
-    dvar = np.mean(dhat*(x-sample_mean)*(sample_var+eps)**(-1.5)/(-2),axis=0)
-    dmean = np.mean(-dhat/np.sqrt(sample_var+eps), axis=0)
-    dx = dhat/np.sqrt(sample_var+eps) + dvar*2*(x-sample_mean) + dmean
+    # dhat = dout*gamma
+    # dvar = gamma*np.mean(-dout*(mean_shifted),axis=0)*(sigma)**(-3)
+    # dmean = gamma*np.mean(-dout/sigma, axis=0)
+    dx = gamma*(dout + np.mean(-dout*(mean_shifted),axis=0)*(sigma)**(-2)*(mean_shifted) + np.mean(-dout, axis=0))/sigma
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

@@ -1,7 +1,7 @@
 from __future__ import print_function, division
-from future import standard_library
+# from future import standard_library
 
-standard_library.install_aliases()
+# standard_library.install_aliases()
 from builtins import range
 from builtins import object
 import os
@@ -192,6 +192,7 @@ class Solver(object):
             self.model.params[p] = next_w
             self.optim_configs[p] = next_config
 
+
     def _save_checkpoint(self):
         if self.checkpoint_name is None:
             return
@@ -261,6 +262,8 @@ class Solver(object):
         num_train = self.X_train.shape[0]
         iterations_per_epoch = max(num_train // self.batch_size, 1)
         num_iterations = self.num_epochs * iterations_per_epoch
+        total_for_time, total_back_time, total_aff_time = 0,0,0
+        
         if self.tqdm_verbose :
             r_obj = tqdm.trange(num_iterations)
         else :
