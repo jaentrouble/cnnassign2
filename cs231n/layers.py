@@ -544,7 +544,18 @@ def conv_forward_naive(x, w, b, conv_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = x.shape
+    F, C_w, HH, WW = w.shape
+    stride, pad = conv_param['stride'], conv_param['pad']
+    pad_shape = ((0,0),(0,0),(pad,pad),(pad,pad))
+    padded = np.pad(x,pad_shape, constant_values=0)[:,np.newaxis,:,:,:]
+    H_out = 1 + (H + 2 * pad - HH) // stride
+    W_out = 1 + (W + 2 * pad - WW) // stride
+    out = np.empty((N, F, H_out, W_out))
+    for i in range(H_out):
+        for j in range(W_out):
+            bef_sum = padded[:,:,:,i*stride:i*stride + HH,j*stride:j*stride + WW]* w
+            out[:,:,i,j] = np.sum(bef_sum, axis=(2,3,4)) + b
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -572,8 +583,24 @@ def conv_backward_naive(dout, cache):
     # TODO: Implement the convolutional backward pass.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    x, w, b, conv_param = cache
+    stride, pad = conv_param['stride'], conv_param['pad']
+    N, C, H, W = x.shape
+    _, F, H_out, W_out = dout.shape
+    _, _, HH, WW = w.shape
+    db = np.sum(dout, axis = (0,2,3))
+    padded_dx = np.zeros((N,C,H+2*pad,W+2*pad))
+    pad_shape = ((0,0),(0,0),(pad,pad),(pad,pad))
+    padded_x = np.pad(x,pad_shape, constant_values=0)[:,np.newaxis,:,:,:]
+    dw = np.zeros_like(w)
+    for i in range(H_out):
+        for j in range(W_out):
+            the_dout = dout[:,:,i,j][:,:,np.newaxis,np.newaxis,np.newaxis]
+            dpatch = (w * the_dout).sum(axis=1)
+            padded_dx[:,:,i*stride:i*stride + HH,j*stride:j*stride + WW] += dpatch
+            dw += (the_dout * padded_x[:,:,:,i*stride:i*stride + HH,j*stride:j*stride + WW]).sum(axis=0)
 
-    pass
+    dx = padded_dx[:,:,pad:-pad,pad:-pad]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -607,7 +634,16 @@ def max_pool_forward_naive(x, pool_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+    N, C, H, W = x.shape
+    H_out = 1 + (H - pool_height) // stride
+    W_out = 1 + (W - pool_width) // stride
+    out = np.zeros((N, C, H_out, W_out))
+    for i in range(H_out) :
+        for j in range(W_out) :
+            out[:,:,i,j] = x[:,:,i*pool_height:(i+1)*pool_height,j*pool_width:(j+1)*pool_width].max(axis=(2,3))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -634,7 +670,21 @@ def max_pool_backward_naive(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, pool_param = cache
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+    N, C, H, W = x.shape
+    _, _, H_out , W_out = dout.shape
+    dx = np.zeros_like(x)
+    for i in range(H_out) :
+        for j in range(W_out) :
+            patch = x[:,:,i*pool_height:(i+1)*pool_height,j*pool_width:(j+1)*pool_width]
+            maxes = patch.max(axis=(2,3))
+            maxes = maxes[:,:,np.newaxis,np.newaxis]
+            mask = patch == maxes
+            dx_patch = mask * dout[:,:,i,j][:,:,np.newaxis,np.newaxis]
+            dx[:,:,i*pool_height:(i+1)*pool_height,j*pool_width:(j+1)*pool_width] += dx_patch
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
