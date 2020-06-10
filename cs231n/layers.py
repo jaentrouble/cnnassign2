@@ -726,7 +726,10 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = x.shape
+    x_reshaped = (x.swapaxes(1,-1)).reshape(-1,C)
+    x_normed, cache = batchnorm_forward(x_reshaped, gamma, beta, bn_param)
+    out = (x_normed.reshape((N,W,H,C))).swapaxes(1,-1)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -760,7 +763,10 @@ def spatial_batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = dout.shape
+    dout_reshaped = (dout.swapaxes(1,-1)).reshape(-1,C)
+    dout_normed, dgamma, dbeta = batchnorm_backward_alt(dout_reshaped, cache)
+    dx = (dout_normed.reshape((N,W,H,C))).swapaxes(1,-1)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -800,7 +806,15 @@ def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = x.shape
+    grouped_x = x.reshape(N, G, -1)
+    sample_mean = np.mean(grouped_x, axis=2)[:,:,np.newaxis]
+    sample_var = np.var(grouped_x, axis=2)[:,:,np.newaxis]
+    mean_shifted = grouped_x-sample_mean
+    sigma = np.sqrt(sample_var + eps)
+    bef_shift = mean_shifted/sigma
+    out = bef_shift.reshape(N,C,H,W)*gamma + beta
+    cache = (gamma, sigma, mean_shifted, bef_shift)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -830,7 +844,17 @@ def spatial_groupnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    gamma, sigma, mean_shifted, bef_shift = cache
+    dgamma = np.sum(bef_shift.reshape(dout.shape) * dout, axis = (0,2,3))
+    dgamma = dgamma[np.newaxis,:,np.newaxis,np.newaxis]
+    dbeta = np.sum(dout, axis=(0,2,3))
+    dbeta = dbeta[np.newaxis,:,np.newaxis,np.newaxis]
+    grouped_dhat = (dout * gamma).reshape(mean_shifted.shape)
+    dx_1 = grouped_dhat
+    dx_2 = np.mean(-grouped_dhat*(mean_shifted),axis=2)[:,:,np.newaxis]*(sigma)**(-2)*mean_shifted
+    dx_3 = np.mean(-grouped_dhat, axis=2)[:,:,np.newaxis]
+    dx = (dx_1 + dx_2 + dx_3)/sigma
+    dx = dx.reshape(dout.shape)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
